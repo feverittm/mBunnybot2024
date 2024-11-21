@@ -5,10 +5,9 @@
 package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
-import frc.robot.commands.ExampleCommand;
+import frc.robot.commands.DefaultDrive;
 import frc.robot.subsystems.ChuteSubsystem;
 import frc.robot.subsystems.DrivetrainSubsystem;
-import frc.robot.subsystems.ExampleSubsystem;
 import frc.robot.subsystems.IntakeSubsystem;
 import frc.robot.subsystems.ToteMoverSubsystem;
 import edu.wpi.first.math.filter.SlewRateLimiter;
@@ -32,7 +31,6 @@ public class RobotContainer {
   private final ChuteSubsystem m_chute = new ChuteSubsystem();
   private final ToteMoverSubsystem m_totemover = new ToteMoverSubsystem();
   private final IntakeSubsystem m_intake = new IntakeSubsystem();
-  private final ExampleSubsystem m_exampleSubsystem = new ExampleSubsystem();
 
   // Replace with CommandPS4Controller or CommandJoystick if needed
   private final CommandXboxController m_controller = new CommandXboxController(
@@ -60,7 +58,13 @@ public class RobotContainer {
     // the right by default.
     final var rot = -m_rotLimiter.calculate(m_controller.getRightX()) * m_drive.kMaxAngularSpeed;
 
-    m_drive.drive(xSpeed, rot);
+    // Configure default commands
+    // Set the default drive command to split-stick arcade drive
+    m_drive.setDefaultCommand(
+        // A split-stick arcade command, with forward/backward controlled by the left
+        // hand, and turning controlled by the right.
+        new DefaultDrive(m_drive, xSpeed, rot)
+    );
 
     // Configure the trigger bindings
     configureBindings();
@@ -82,15 +86,20 @@ public class RobotContainer {
    */
   private void configureBindings() {
     // Schedule `ExampleCommand` when `exampleCondition` changes to `true`
-    new Trigger(m_exampleSubsystem::exampleCondition)
-        .onTrue(new ExampleCommand(m_exampleSubsystem));
+    // new Trigger(m_exampleSubsystem::exampleCondition)
+    // .onTrue(new ExampleCommand(m_exampleSubsystem));
 
     // Schedule `exampleMethodCommand` when the Xbox controller's B button is
     // pressed,
     // cancelling on release.
-    m_controller.b().whileTrue(m_exampleSubsystem.exampleMethodCommand());
+    // m_controller.b().whileTrue(m_exampleSubsystem.exampleMethodCommand());
 
-    m_controller.a().whileTrue(m_intake.runIntake());
+    m_controller.a().whileTrue(m_intake.runIntake(0.5));
+
+    m_controller.povUp().whileTrue(m_totemover.toteMoverManualExtend());
+    m_controller.povDown().whileTrue(m_totemover.toteMoverManualRetract());
+    m_controller.povLeft().whileTrue(m_totemover.toteMoverAutoPrev());
+    m_controller.povRight().whileTrue(m_totemover.toteMoverAutoNext());
   }
 
   /**
@@ -100,6 +109,7 @@ public class RobotContainer {
    */
   public Command getAutonomousCommand() {
     // An example command will be run in autonomous
-    return Commands.sequence(m_chute.runFanCommand(), m_intake.runIntake());
+    return Commands.sequence(m_totemover.moveToArmSetpoint(ToteMoverSubsystem.ArmPosition.HOLD),
+        m_chute.runFanCommand(), m_intake.runIntake(0.5));
   }
 }

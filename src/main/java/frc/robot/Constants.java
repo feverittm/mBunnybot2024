@@ -45,18 +45,20 @@ public final class Constants {
     public static final int gateServoChannel = 7;
 
     // Digital
-    public static final int lowerBreakBeamChannel = 2;
-    public static final int upperBreakBeamChannel = 3;
+    public static final int lowerBreakBeamChannel = 4;
+    public static final int upperBreakBeamChannel = 5;
 
     // Constants
+    public static final double openAngle = 90;
+    public static final double closeAngle = 0; 
   }
 
   public static class LifterConstants {
     // CAN (not PWM)
-    public static final int lifterMotorChannel = 1;
+    public static final int lifterMotorChannel = 5;
 
     // Digital
-    public static final int lifterLimitChannel = 1;
+    public static final int lifterLimitChannel = 6;
 
     // Constants
     public static final double kP = 1.0;
@@ -67,6 +69,11 @@ public final class Constants {
     public static final double LifterTolerance = 10.0;
     public static final double kEncoderDistancePerPulse = 1.0;
     public static final double kLifterTarget = 0;
+    // Position States for the Lifter Arm.
+    public static final double kHoldPosition    = 10;
+    public static final double kPrepPosition    = 20;
+    public static final double kCapturePosition = 30;
+
   }
 
   public static class VisionConstants {}

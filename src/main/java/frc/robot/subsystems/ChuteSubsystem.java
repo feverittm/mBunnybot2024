@@ -26,8 +26,16 @@ public class ChuteSubsystem extends SubsystemBase {
 
   private APDS9960 apds = new APDS9960();
 
+  public int balloonCount = 0;
+
   public ChuteSubsystem() {
     fanMotor_1.addFollower(fanMotor_2);
+  }
+
+  public void openGate() {
+    double currentAngle = gateServo.getAngle();
+    SmartDashboard.putNumber("Gate Angle", currentAngle);
+    gateServo.setAngle(0);
   }
 
   public void setMotorSpeed(double speed) {
@@ -38,8 +46,10 @@ public class ChuteSubsystem extends SubsystemBase {
     return lowerBreakBeam.get();
   }
 
-  public Color getColor() {
-    return apds.readColor();
+  public double[] getColorArray() {
+    Color color = apds.readColor();
+    double[] colors = {color.red, color.green, color.blue};
+    return colors;
   }
 
   public Command runFanCommand() {
@@ -54,8 +64,6 @@ public class ChuteSubsystem extends SubsystemBase {
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
-    Color color = getColor();
-    double[] colors = {color.red, color.green, color.blue};
-    SmartDashboard.putNumberArray("Color Sensor", colors);
+    SmartDashboard.putNumberArray("Color Sensor", getColorArray());
   }
 }

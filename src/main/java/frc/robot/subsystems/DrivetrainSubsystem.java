@@ -4,17 +4,22 @@
 
 package frc.robot.subsystems;
 
+import com.kauailabs.navx.frc.AHRS;
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkLowLevel.MotorType;
+
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
-import edu.wpi.first.wpilibj.AnalogGyro;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Encoder;
-import edu.wpi.first.wpilibj.motorcontrol.PWMSparkMax;
+import edu.wpi.first.wpilibj.SerialPort.Port;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants.DrivetrainConstants;
 
 public class DrivetrainSubsystem extends SubsystemBase {
   public final double kMaxSpeed = 3.0; // meters per second
@@ -24,36 +29,58 @@ public class DrivetrainSubsystem extends SubsystemBase {
   private static final double kWheelRadius = 0.0508; // meters
   private static final int kEncoderResolution = 4096;
 
-  private final PWMSparkMax m_leftLeader = new PWMSparkMax(1);
-  private final PWMSparkMax m_leftFollower = new PWMSparkMax(2);
-  private final PWMSparkMax m_rightLeader = new PWMSparkMax(3);
-  private final PWMSparkMax m_rightFollower = new PWMSparkMax(4);
+  private final CANSparkMax m_leftLeader = new CANSparkMax(DrivetrainConstants.leftLeaderChannel, MotorType.kBrushless);
+  private final CANSparkMax m_leftFollower = new CANSparkMax(DrivetrainConstants.leftFollowerChannel,
+      MotorType.kBrushless);
+  private final CANSparkMax m_rightLeader = new CANSparkMax(DrivetrainConstants.rightLeaderChannel,
+      MotorType.kBrushless);
+  private final CANSparkMax m_rightFollower = new CANSparkMax(DrivetrainConstants.rightFollowerChannel,
+      MotorType.kBrushless);
 
-  private final Encoder m_leftEncoder = new Encoder(0, 1);
-  private final Encoder m_rightEncoder = new Encoder(2, 3);
+  private final Encoder m_leftEncoder = new Encoder(DrivetrainConstants.leftEncoderChannels[0],
+      DrivetrainConstants.leftEncoderChannels[1]);
+  private final Encoder m_rightEncoder = new Encoder(DrivetrainConstants.rightEncoderChannels[0],
+      DrivetrainConstants.rightEncoderChannels[1]);
 
-  private final AnalogGyro m_gyro = new AnalogGyro(0);
+  private AHRS ahrs;
 
   private final PIDController m_leftPIDController = new PIDController(1, 0, 0);
   private final PIDController m_rightPIDController = new PIDController(1, 0, 0);
 
-  private final DifferentialDriveKinematics m_kinematics =
-      new DifferentialDriveKinematics(kTrackWidth);
+  private final DifferentialDriveKinematics m_kinematics = new DifferentialDriveKinematics(kTrackWidth);
 
   private final DifferentialDriveOdometry m_odometry;
 
   // Gains are for example purposes only - must be determined for your own robot!
   private final SimpleMotorFeedforward m_feedforward = new SimpleMotorFeedforward(1, 3);
+
   /** Creates a new DrivetrainSubsystem. */
   public DrivetrainSubsystem() {
-    m_gyro.reset();
+    try {
+      /* Communicate w/navX-MXP via the MXP SPI Bus. */
+      /* Alternatively: I2C.Port.kMXP, SerialPort.Port.kMXP or SerialPort.Port.kUSB */
+      /*
+       * See http://navx-mxp.kauailabs.com/guidance/selecting-an-interface/ for
+       * details.
+       */
+      ahrs = new AHRS(Port.kUSB);
+    } catch (RuntimeException ex) {
+      DriverStation.reportError("Error instantiating navX-MXP:  " + ex.getMessage(), true);
+    }
+    ahrs.reset();
 
-    m_leftLeader.addFollower(m_leftFollower);
-    m_rightLeader.addFollower(m_rightFollower);
+    m_leftLeader.restoreFactoryDefaults();
+    m_rightLeader.restoreFactoryDefaults();
+    m_leftFollower.restoreFactoryDefaults();
+    m_rightFollower.restoreFactoryDefaults();
+
+    m_leftFollower.follow(m_leftLeader);
+    m_rightFollower.follow(m_rightLeader);
 
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
+    m_rightFollower.setInverted(true);
     m_rightLeader.setInverted(true);
 
     // Set the distance per pulse for the drive encoders. We can simply use the
@@ -65,9 +92,8 @@ public class DrivetrainSubsystem extends SubsystemBase {
     m_leftEncoder.reset();
     m_rightEncoder.reset();
 
-    m_odometry =
-        new DifferentialDriveOdometry(
-            m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+    m_odometry = new DifferentialDriveOdometry(
+        ahrs.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
   }
 
   /**
@@ -76,15 +102,11 @@ public class DrivetrainSubsystem extends SubsystemBase {
    * @param speeds The desired wheel speeds.
    */
   public void setSpeeds(DifferentialDriveWheelSpeeds speeds) {
-    final double leftFeedforward =
-        m_feedforward.calculate(speeds.leftMetersPerSecond);
-    final double rightFeedforward =
-        m_feedforward.calculate(speeds.rightMetersPerSecond);
+    final double leftFeedforward = m_feedforward.calculate(speeds.leftMetersPerSecond);
+    final double rightFeedforward = m_feedforward.calculate(speeds.rightMetersPerSecond);
 
-    final double leftOutput =
-        m_leftPIDController.calculate(m_leftEncoder.getRate(), speeds.leftMetersPerSecond);
-    final double rightOutput =
-        m_rightPIDController.calculate(m_rightEncoder.getRate(), speeds.rightMetersPerSecond);
+    final double leftOutput = m_leftPIDController.calculate(m_leftEncoder.getRate(), speeds.leftMetersPerSecond);
+    final double rightOutput = m_rightPIDController.calculate(m_rightEncoder.getRate(), speeds.rightMetersPerSecond);
     m_leftLeader.setVoltage(leftOutput + leftFeedforward);
     m_rightLeader.setVoltage(rightOutput + rightFeedforward);
   }
@@ -93,7 +115,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
    * Drives the robot with the given linear velocity and angular velocity.
    *
    * @param xSpeed Linear velocity in m/s.
-   * @param rot Angular velocity in rad/s.
+   * @param rot    Angular velocity in rad/s.
    */
   public void drive(double xSpeed, double rot) {
     var wheelSpeeds = m_kinematics.toWheelSpeeds(new ChassisSpeeds(xSpeed, 0.0, rot));
@@ -103,7 +125,7 @@ public class DrivetrainSubsystem extends SubsystemBase {
   /** Updates the field-relative position. */
   public void updateOdometry() {
     m_odometry.update(
-        m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+        ahrs.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
   }
 
   @Override

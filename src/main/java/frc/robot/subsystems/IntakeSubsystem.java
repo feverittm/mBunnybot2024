@@ -21,12 +21,12 @@ public class IntakeSubsystem extends SubsystemBase {
     intakeMotor.set(speed);
   }
 
-  public Command runIntake() {
+  public Command runIntake(double speed) {
     // Inline construction of command goes here.
     // Subsystem::RunOnce implicitly requires `this` subsystem.
     return runOnce(
         () -> {
-          setIntakeSpeed(0.5);
+          setIntakeSpeed(speed);
         });
   }
 
