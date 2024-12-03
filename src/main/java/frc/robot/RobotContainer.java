@@ -63,8 +63,7 @@ public class RobotContainer {
     m_drive.setDefaultCommand(
         // A split-stick arcade command, with forward/backward controlled by the left
         // hand, and turning controlled by the right.
-        new DefaultDrive(m_drive, xSpeed, rot)
-    );
+        new DefaultDrive(m_drive, xSpeed, rot));
 
     // Configure the trigger bindings
     configureBindings();
@@ -100,6 +99,11 @@ public class RobotContainer {
     m_controller.povDown().whileTrue(m_totemover.toteMoverManualRetract());
     m_controller.povLeft().whileTrue(m_totemover.toteMoverAutoPrev());
     m_controller.povRight().whileTrue(m_totemover.toteMoverAutoNext());
+
+    m_controller.b().toggleOnTrue(Commands.startEnd(
+        m_drive::setDriveForward,
+        m_drive::setDriveReverse,
+        m_drive));
   }
 
   /**

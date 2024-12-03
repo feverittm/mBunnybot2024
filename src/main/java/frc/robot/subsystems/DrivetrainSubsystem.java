@@ -4,6 +4,8 @@
 
 package frc.robot.subsystems;
 
+import javax.swing.text.StyleContext.SmallAttributeSet;
+
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
@@ -17,7 +19,8 @@ import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.SerialPort.Port;
-
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DrivetrainConstants;
 
@@ -50,6 +53,8 @@ public class DrivetrainSubsystem extends SubsystemBase {
   private final DifferentialDriveKinematics m_kinematics = new DifferentialDriveKinematics(kTrackWidth);
 
   private final DifferentialDriveOdometry m_odometry;
+
+  private boolean m_driveDirection = true;
 
   // Gains are for example purposes only - must be determined for your own robot!
   private final SimpleMotorFeedforward m_feedforward = new SimpleMotorFeedforward(1, 3);
@@ -94,6 +99,19 @@ public class DrivetrainSubsystem extends SubsystemBase {
 
     m_odometry = new DifferentialDriveOdometry(
         ahrs.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+
+    m_driveDirection = true;
+  }
+
+  /**
+   * Set driving direction
+   * @param boolean direction
+   * true: Regular forward with intake/chute forward.
+   * false: Reversed.  Totermover is set as the 'front' of the robot.
+   */
+  public void setDriveDirection(boolean direction) {
+    m_driveDirection = direction;
+    SmartDashboard.putBoolean("Drive Direction", m_driveDirection);
   }
 
   /**
@@ -107,8 +125,8 @@ public class DrivetrainSubsystem extends SubsystemBase {
 
     final double leftOutput = m_leftPIDController.calculate(m_leftEncoder.getRate(), speeds.leftMetersPerSecond);
     final double rightOutput = m_rightPIDController.calculate(m_rightEncoder.getRate(), speeds.rightMetersPerSecond);
-    m_leftLeader.setVoltage(leftOutput + leftFeedforward);
-    m_rightLeader.setVoltage(rightOutput + rightFeedforward);
+    m_leftLeader.setVoltage(m_driveDirection ? leftOutput + leftFeedforward : -rightOutput);
+    m_rightLeader.setVoltage(m_driveDirection ? rightOutput + rightFeedforward : -leftOutput);
   }
 
   /**
@@ -126,6 +144,24 @@ public class DrivetrainSubsystem extends SubsystemBase {
   public void updateOdometry() {
     m_odometry.update(
         ahrs.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+  }
+
+  public Command setDriveForward() {
+    // Inline construction of command goes here.
+    // Subsystem::RunOnce implicitly requires `this` subsystem.
+    return runOnce(
+        () -> {
+          setDriveDirection(true);
+        });
+  }
+
+  public Command setDriveReverse() {
+    // Inline construction of command goes here.
+    // Subsystem::RunOnce implicitly requires `this` subsystem.
+    return runOnce(
+        () -> {
+          setDriveDirection(false);;
+        });
   }
 
   @Override
