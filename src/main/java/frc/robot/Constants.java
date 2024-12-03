@@ -60,6 +60,9 @@ public final class Constants {
     // Digital
     public static final int lifterLimitChannel = 6;
 
+    // Analog
+    public static final int toteDistanceSensorPort = 0;
+
     // Constants
     public static final double kP = 1.0;
     public static final double kI = 0.0;

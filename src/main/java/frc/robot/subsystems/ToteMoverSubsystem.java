@@ -10,10 +10,12 @@ import com.revrobotics.CANSparkLowLevel.MotorType;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.wpilibj.AnalogInput;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.PIDSubsystem;
+import frc.robot.Constants.LifterConstants;
 
 import static frc.robot.Constants.LifterConstants;
 
@@ -53,6 +55,8 @@ public class ToteMoverSubsystem extends PIDSubsystem {
   private final CANSparkMax lifterMotor = new CANSparkMax(LifterConstants.lifterMotorChannel, MotorType.kBrushless);
   private final DigitalInput lifterLimitSwitch = new DigitalInput(LifterConstants.lifterLimitChannel);
 
+  private final AnalogInput toteDistance = new AnalogInput(LifterConstants.toteDistanceSensorPort);
+
   private final RelativeEncoder lifterEncoder = lifterMotor.getEncoder();
 
   private final SimpleMotorFeedforward lifterFeedforward = new SimpleMotorFeedforward(LifterConstants.kSVolts,
@@ -81,6 +85,9 @@ public class ToteMoverSubsystem extends PIDSubsystem {
 
     zeroPosition();
     lifterEncoder.setPositionConversionFactor(LifterConstants.kEncoderDistancePerPulse);
+
+    toteDistance.setOversampleBits(4);
+
 
     // setSetpoint(LifterConstants.kLifterTarget);
   }
