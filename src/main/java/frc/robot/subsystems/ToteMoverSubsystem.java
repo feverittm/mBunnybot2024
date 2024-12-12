@@ -15,7 +15,6 @@ import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.PIDSubsystem;
-import frc.robot.Constants.LifterConstants;
 
 import static frc.robot.Constants.LifterConstants;
 
@@ -220,7 +219,6 @@ public class ToteMoverSubsystem extends PIDSubsystem {
       if (direction = true) {
         if (armSetpoint >= currentPosition) { return n; }
       } else {
-          // TODO: reverse search.  Need to return the previous setpoint.
           if (armSetpoint <= currentPosition) { return n; }
       }
     }

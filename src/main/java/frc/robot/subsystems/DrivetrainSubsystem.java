@@ -4,8 +4,6 @@
 
 package frc.robot.subsystems;
 
-import javax.swing.text.StyleContext.SmallAttributeSet;
-
 import com.kauailabs.navx.frc.AHRS;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
